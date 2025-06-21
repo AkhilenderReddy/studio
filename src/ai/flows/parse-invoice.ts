@@ -28,13 +28,13 @@ const TaxItemSchema = z.object({
 
 const InvoiceItemSchema = z.object({
   'sl.no': z.number().nullable().describe('The serial number of the item.'),
-  hsn: z.string().describe('The Harmonized System of Nomenclature (HSN) code for the item.'),
-  description: z.string().describe('A description of the invoice item.'),
-  unit_price: z.number().describe('The price per unit of the item.'),
-  qty: z.number().describe('The quantity of the item.'),
-  net_amount: z.number().describe('The net amount for the item (quantity * unit price).'),
-  tax: z.array(TaxItemSchema).describe('An array of taxes applied to the item.'),
-  total_amount: z.number().describe('The total amount for the item including taxes.'),
+  hsn: z.string().nullable().describe('The Harmonized System of Nomenclature (HSN) code for the item.'),
+  description: z.string().nullable().describe('A description of the invoice item.'),
+  unit_price: z.number().nullable().describe('The price per unit of the item.'),
+  qty: z.number().nullable().describe('The quantity of the item.'),
+  net_amount: z.number().nullable().describe('The net amount for the item (quantity * unit price).'),
+  tax: z.array(TaxItemSchema).nullable().describe('An array of taxes applied to the item.'),
+  total_amount: z.number().nullable().describe('The total amount for the item including taxes.'),
 });
 
 const BankDetailsSchema = z.object({
@@ -51,44 +51,44 @@ const ContactDetailsSchema = z.object({
 });
 
 const SellerSchema = z.object({
-  name: z.string().describe('The name of the seller.'),
-  gst: z.string().describe('The GST identification number of the seller.'),
+  name: z.string().nullable().describe('The name of the seller.'),
+  gst: z.string().nullable().describe('The GST identification number of the seller.'),
   pan: z.string().nullable().describe('The Permanent Account Number (PAN) of the seller.'),
-  address: z.string().describe('The full address of the seller.'),
-  state: z.string().describe('The state of the seller.'),
-  pincode: z.string().describe("The postal code of the seller's address."),
+  address: z.string().nullable().describe('The full address of the seller.'),
+  state: z.string().nullable().describe('The state of the seller.'),
+  pincode: z.string().nullable().describe("The postal code of the seller's address."),
   country: z.string().nullable().describe('The country of the seller.'),
-  bank_details: BankDetailsSchema.describe("The seller's bank account details."),
-  contact_details: ContactDetailsSchema.describe("The seller's contact details."),
+  bank_details: BankDetailsSchema.nullable().describe("The seller's bank account details."),
+  contact_details: ContactDetailsSchema.nullable().describe("The seller's contact details."),
 });
 
 const BuyerSchema = z.object({
-  name: z.string().describe('The name of the buyer.'),
-  gst: z.string().describe('The GST identification number of the buyer.'),
+  name: z.string().nullable().describe('The name of the buyer.'),
+  gst: z.string().nullable().describe('The GST identification number of the buyer.'),
   pan: z.string().nullable().describe('The Permanent Account Number (PAN) of the buyer.'),
-  address: z.string().describe('The full address of the buyer.'),
-  state: z.string().describe('The state of the buyer.'),
-  pincode: z.string().describe("The postal code of the buyer's address."),
+  address: z.string().nullable().describe('The full address of the buyer.'),
+  state: z.string().nullable().describe('The state of the buyer.'),
+  pincode: z.string().nullable().describe("The postal code of the buyer's address."),
   country: z.string().nullable().describe('The country of the buyer.'),
-  contact_details: ContactDetailsSchema.describe("The buyer's contact details."),
-  billing_address: z.string().describe('The billing address for the buyer.'),
-  shipping_address: z.string().describe('The shipping address for the buyer.'),
+  contact_details: ContactDetailsSchema.nullable().describe("The buyer's contact details."),
+  billing_address: z.string().nullable().describe('The billing address for the buyer.'),
+  shipping_address: z.string().nullable().describe('The shipping address for the buyer.'),
 });
 
 const ExtractedDataSchema = z.object({
   order_number: z.string().nullable().describe('The order number associated with the invoice.'),
-  invoice_number: z.string().describe('The unique invoice number.'),
+  invoice_number: z.string().nullable().describe('The unique invoice number.'),
   order_date: z.string().nullable().describe('The date the order was placed (YYYY-MM-DD).'),
-  invoice_id: z.string().describe('The invoice ID, often the same as the invoice number.'),
-  invoice_date: z.string().describe('The date the invoice was issued (YYYY-MM-DD).'),
-  seller: SellerSchema.describe('Details of the seller.'),
-  buyer: BuyerSchema.describe('Details of the buyer.'),
-  place_of_supply: z.string().describe('The place where the supply of goods or services occurred.'),
+  invoice_id: z.string().nullable().describe('The invoice ID, often the same as the invoice number.'),
+  invoice_date: z.string().nullable().describe('The date the invoice was issued (YYYY-MM-DD).'),
+  seller: SellerSchema.nullable().describe('Details of the seller.'),
+  buyer: BuyerSchema.nullable().describe('Details of the buyer.'),
+  place_of_supply: z.string().nullable().describe('The place where the supply of goods or services occurred.'),
   place_of_delivery: z.string().nullable().describe('The place where the goods or services were delivered.'),
-  invoice_items: z.array(InvoiceItemSchema).describe('A list of all items on the invoice.'),
+  invoice_items: z.array(InvoiceItemSchema).nullable().describe('A list of all items on the invoice.'),
   transaction_id: z.string().nullable().describe('Any transaction ID associated with the payment.'),
   date_time: z.string().nullable().describe('The date and time of the invoice in ISO 8601 format.'),
-  invoice_value: z.number().describe('The total value of the invoice.'),
+  invoice_value: z.number().nullable().describe('The total value of the invoice.'),
   mode_of_payment: z.string().nullable().describe('The method of payment used or to be used.'),
 });
 
