@@ -105,8 +105,12 @@ const prompt = ai.definePrompt({
   name: 'parseInvoicePrompt',
   input: {schema: ParseInvoiceInputSchema},
   output: {schema: ParseInvoiceOutputSchema},
-  prompt: `Given the attached invoice image, extract the following information and present it in a JSON object. Adhere strictly to the provided JSON structure and field names. If a field is not found or applicable, set its value to 
-  \`null\". Do not add any new fields.
+  prompt: `You are an expert invoice processing AI. Your task is to extract information from the provided invoice image and format it as a JSON object.
+
+**Crucial Instructions:**
+1.  **Strictly Adhere to Schema:** The output MUST strictly follow the provided JSON schema structure. Pay close attention to nested objects like \`seller\`, \`buyer\`, and \`invoice_items\`. All extracted information for a seller must be inside the \`seller\` object. All extracted information for a buyer must be inside the \`buyer\` object.
+2.  **Do Not Omit Fields:** All fields defined in the schema must be present in your output.
+3.  **Use \`null\` for Missing Data:** If a value for a field cannot be found in the invoice, you MUST include the field key and set its value to \`null\`. Do not omit the key. This applies to all fields, including nested ones. For example, if you cannot find any buyer information, you must output \`"buyer": null\`. If you find buyer information but not their PAN, you must output \`"pan": null\` inside the buyer object.
 
 Here is the desired JSON structure with example values:
 
@@ -189,6 +193,7 @@ Ensure all numerical values are extracted as numbers (integers or floats) and no
 
 Pay close attention to multi-line fields like addresses and descriptions, capturing them completely. For \`seller.bank_details\`, extract all provided bank information.
 
+The invoice to parse is attached.
 {{media url=invoiceDataUri}}
 `,
 });
