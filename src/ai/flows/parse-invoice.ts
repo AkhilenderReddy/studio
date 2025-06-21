@@ -85,7 +85,7 @@ const ExtractedDataSchema = z.object({
   buyer: BuyerSchema.nullable().describe('Details of the buyer.'),
   place_of_supply: z.string().nullable().describe('The place where the supply of goods or services occurred.'),
   place_of_delivery: z.string().nullable().describe('The place where the goods or services were delivered.'),
-  invoice_items: z.array(InvoiceItemSchema).nullable().describe('A list of all items on the invoice.'),
+  invoice_items: z.array(InvoiceItemSchema).describe('A list of all items on the invoice. Must be an empty array if no items are found.'),
   transaction_id: z.string().nullable().describe('Any transaction ID associated with the payment.'),
   date_time: z.string().nullable().describe('The date and time of the invoice in ISO 8601 format.'),
   invoice_value: z.number().nullable().describe('The total value of the invoice.'),
@@ -111,6 +111,7 @@ const prompt = ai.definePrompt({
 1.  **Strictly Adhere to Schema:** The output MUST strictly follow the provided JSON schema structure. Pay close attention to nested objects like \`seller\`, \`buyer\`, and \`invoice_items\`. All extracted information for a seller must be inside the \`seller\` object. All extracted information for a buyer must be inside the \`buyer\` object.
 2.  **Do Not Omit Fields:** All fields defined in the schema must be present in your output.
 3.  **Use \`null\` for Missing Data:** If a value for a field cannot be found in the invoice, you MUST include the field key and set its value to \`null\`. Do not omit the key. This applies to all fields, including nested ones. For example, if you cannot find any buyer information, you must output \`"buyer": null\`. If you find buyer information but not their PAN, you must output \`"pan": null\` inside the buyer object.
+4.  **Handle \`invoice_items\` Array:** The \`invoice_items\` field must be an array of \`InvoiceItem\` objects. If no line items are found on the invoice, provide an empty array: \`"invoice_items": []\`. This field cannot be \`null\`. **Crucially, do not put \`null\` values as elements of the array.** Each element in the array must be a full \`InvoiceItem\` object; if you detect a line item but cannot extract its details, you should still create the object and set its individual fields to \`null\`.
 
 Here is the desired JSON structure with example values:
 
