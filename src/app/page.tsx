@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { FileJson, Loader2, UploadCloud } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import * as pdfjs from 'pdfjs-dist';
@@ -43,8 +43,13 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<string>('Awaiting invoice upload.');
   const [isDragging, setIsDragging] = useState(false);
+  const [year, setYear] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
 
   const convertPdfToImage = async (file: File) => {
     setStatus('Converting PDF to image...');
@@ -264,7 +269,7 @@ export default function Home() {
 
       <footer className="py-4 border-t bg-card">
         <div className="container mx-auto text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} InvoiceAI. All rights reserved.</p>
+          <p>&copy; {year} InvoiceAI. All rights reserved.</p>
         </div>
       </footer>
     </div>
