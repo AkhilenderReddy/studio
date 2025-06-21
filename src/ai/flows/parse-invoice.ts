@@ -28,7 +28,7 @@ const TaxItemSchema = z.object({
 
 const InvoiceItemSchema = z.object({
   'sl.no': z.number().nullable().describe('The serial number of the item.'),
-  hsn: z.string().describe('The Harmonized System of Nomenclature (HSN) code for the item.'),
+  hsn: z.string().nullable().describe('The Harmonized System of Nomenclature (HSN) code for the item.'),
   description: z.string().describe('A description of the invoice item.'),
   unit_price: z.number().describe('The price per unit of the item.'),
   qty: z.number().describe('The quantity of the item.'),
@@ -52,11 +52,11 @@ const ContactDetailsSchema = z.object({
 
 const SellerSchema = z.object({
   name: z.string().describe('The name of the seller.'),
-  gst: z.string().describe('The GST identification number of the seller.'),
+  gst: z.string().nullable().describe('The GST identification number of the seller.'),
   pan: z.string().nullable().describe('The Permanent Account Number (PAN) of the seller.'),
-  address: z.string().describe('The full address of the seller.'),
-  state: z.string().describe('The state of the seller.'),
-  pincode: z.string().describe("The postal code of the seller's address."),
+  address: z.string().nullable().describe('The full address of the seller.'),
+  state: z.string().nullable().describe('The state of the seller.'),
+  pincode: z.string().nullable().describe("The postal code of the seller's address."),
   country: z.string().nullable().describe('The country of the seller.'),
   bank_details: BankDetailsSchema.nullable().describe("The seller's bank account details."),
   contact_details: ContactDetailsSchema.nullable().describe("The seller's contact details."),
@@ -64,11 +64,11 @@ const SellerSchema = z.object({
 
 const BuyerSchema = z.object({
   name: z.string().describe('The name of the buyer.'),
-  gst: z.string().describe('The GST identification number of the buyer.'),
+  gst: z.string().nullable().describe('The GST identification number of the buyer.'),
   pan: z.string().nullable().describe('The Permanent Account Number (PAN) of the buyer.'),
-  address: z.string().describe('The full address of the buyer.'),
-  state: z.string().describe('The state of the buyer.'),
-  pincode: z.string().describe("The postal code of the buyer's address."),
+  address: z.string().nullable().describe('The full address of the buyer.'),
+  state: z.string().nullable().describe('The state of the buyer.'),
+  pincode: z.string().nullable().describe("The postal code of the buyer's address."),
   country: z.string().nullable().describe('The country of the buyer.'),
   contact_details: ContactDetailsSchema.nullable().describe("The buyer's contact details."),
   billing_address: z.string().nullable().describe('The billing address for the buyer.'),
@@ -83,7 +83,7 @@ const ExtractedDataSchema = z.object({
   invoice_date: z.string().describe('The date the invoice was issued (YYYY-MM-DD).'),
   seller: SellerSchema.describe('Details of the seller. This is a required object.'),
   buyer: BuyerSchema.describe('Details of the buyer. This is a required object.'),
-  place_of_supply: z.string().describe('The place where the supply of goods or services occurred.'),
+  place_of_supply: z.string().nullable().describe('The place where the supply of goods or services occurred.'),
   place_of_delivery: z.string().nullable().describe('The place where the goods or services were delivered.'),
   invoice_items: z.array(InvoiceItemSchema).describe('A list of all items on the invoice. Must be an empty array if no items are found.'),
   transaction_id: z.string().nullable().describe('Any transaction ID associated with the payment.'),
@@ -105,94 +105,123 @@ const prompt = ai.definePrompt({
   name: 'parseInvoicePrompt',
   input: {schema: ParseInvoiceInputSchema},
   output: {schema: ParseInvoiceOutputSchema},
-  prompt: `You are an expert invoice processing AI. Your task is to extract information from the provided invoice image and format it as a JSON object.
+  prompt: `You are an expert invoice data extractor. Your task is to analyze the provided invoice image and extract all relevant information, presenting it as a single JSON object.
 
-**Crucial Instructions:**
-1.  **Strictly Adhere to Schema:** The output MUST strictly follow the provided JSON schema structure. Pay close attention to nested objects like \`seller\`, \`buyer\`, and \`invoice_items\`. The \`seller\` and \`buyer\` objects are required and cannot be null.
-2.  **Do Not Omit Fields:** All fields defined in the schema must be present in your output.
-3.  **Use \`null\` for Missing Data:** If a value for a *nullable* field cannot be found in the invoice, you MUST include the field key and set its value to \`null\`. Do not omit the key. For required fields (non-nullable), you must extract a value.
-4.  **Handle \`invoice_items\` Array:** The \`invoice_items\` field must be an array of \`InvoiceItem\` objects. If no line items are found on the invoice, provide an empty array: \`"invoice_items": []\`. This field cannot be \`null\`. **Crucially, do not put \`null\` values as elements of the array.** Each element in the array must be a full \`InvoiceItem\` object.
+**Adhere strictly to the following JSON schema and field names.** If a field is not present in the invoice or is not applicable, set its value to \`null\`. For arrays (like \`invoice_items\` or \`tax\`), return an empty array \`[]\` if no items are found, rather than an array of \`null\` values. Do not add any extra fields beyond this schema.
 
-Here is the desired JSON structure with example values:
+**JSON Schema for Extraction:**
 
-\`json
+\`\`\`json
 {
-  "order_number": null,
-  "invoice_number": "24-25/Jan/8461",
-  "order_date": null,
-  "invoice_id": "24-25/Jan/8461",
-  "invoice_date": "2025-02-11",
-  "seller": {
-    "name": "ASCENT HR TECHNOLOGIES PVT LTD",
-    "gst": "29AAECA0163D1Z4",
-    "pan": "AAECA0163D",
-    "address": "MARUTHI CHAMBERS, 3RD FLOOR, SURVEY NO:17/4C, 9C, ROOPENA AGRAHARA, BANGALORE, 560068",
-    "state": "KARNATAKA",
-    "pincode": "560068",
-    "country": null,
-    "bank_details": {
-      "account_name": "ASCENT HR TECHNOLOGIES PVT LTD",
-      "account_number": "50200008759632",
-      "bank_name": "HDFC BANK LTD",
-      "branch": "Jayanagar branch, BANGALORE - 560 041",
-      "ifsc": "HDFC0001226"
-    },
-    "contact_details": {
-      "phone": null,
-      "email": null
-    }
-  },
-  "buyer": {
-    "name": "OMNENEST TECHNOLOGIES PRIVATE LIMITED",
-    "gst": "29AADCO9631P1ZN",
-    "pan": null,
-    "address": "Survey No 16/1 and 17/2, South Tower, Vaishnavi Tech Park, Ambalipura Village, Varthur Hobli, Bangalore East Taluk, BANGALORE, 560103",
-    "state": "KARNATAKA",
-    "pincode": "560103",
-    "country": null,
-    "contact_details": {
-      "email": null,
-      "phone": null
-    },
-    "billing_address": "Survey No 16/1 and 17/2, South Tower, Vaishnavi Tech Park, Ambalipura Village, Varthur Hobli, Bangalore East Taluk, BANGALORE, 560103",
-    "shipping_address": "Survey No 16/1 and 17/2, South Tower, Vaishnavi Tech Park, Ambalipura Village, Varthur Hobli, Bangalore East Taluk, BANGALORE, 560103"
-  },
-  "place_of_supply": "BANGALORE, KARNATAKA - KA - 29",
-  "place_of_delivery": null,
-  "invoice_items": [
-    {
-      "sl.no": null,
-      "hsn": "998216",
-      "description": "Charges for compliance act under apprentice act for the period of Sep-24 to Dec-24 for 8 at Rs.5000 per establishment",
-      "unit_price": 5000,
-      "qty": 8,
-      "net_amount": 40000,
-      "tax": [
-        {
-          "tax_type": "SGST",
-          "tax_rate": 9,
-          "tax_amount": 3600
+  "type": "OBJECT",
+  "properties": {
+    "order_number": {"type": "STRING", "nullable": true},
+    "invoice_number": {"type": "STRING"},
+    "order_date": {"type": "STRING", "nullable": true},
+    "invoice_id": {"type": "STRING", "nullable": true},
+    "invoice_date": {"type": "STRING"},
+    "seller": {
+      "type": ["OBJECT", "null"],
+      "properties": {
+        "name": {"type": "STRING"},
+        "gst": {"type": "STRING", "nullable": true},
+        "pan": {"type": "STRING", "nullable": true},
+        "address": {"type": "STRING", "nullable": true},
+        "state": {"type": "STRING", "nullable": true},
+        "pincode": {"type": "STRING", "nullable": true},
+        "country": {"type": "STRING", "nullable": true},
+        "bank_details": {
+          "type": ["OBJECT", "null"],
+          "properties": {
+            "account_name": {"type": "STRING", "nullable": true},
+            "account_number": {"type": "STRING", "nullable": true},
+            "bank_name": {"type": "STRING", "nullable": true},
+            "branch": {"type": "STRING", "nullable": true},
+            "ifsc": {"type": "STRING", "nullable": true}
+          },
+          "required": []
         },
-        {
-          "tax_type": "CGST",
-          "tax_rate": 9,
-          "tax_amount": 3600
+        "contact_details": {
+          "type": ["OBJECT", "null"],
+          "properties": {
+            "phone": {"type": "STRING", "nullable": true},
+            "email": {"type": "STRING", "nullable": true}
+          },
+          "required": []
         }
-      ],
-      "total_amount": 47200
-    }
-  ],
-  "transaction_id": null,
-  "date_time": "2025-02-11T16:39:10+05:30",
-  "invoice_value": 47200,
-  "mode_of_payment": null
+      },
+      "required": ["name"]
+    },
+    "buyer": {
+      "type": ["OBJECT", "null"],
+      "properties": {
+        "name": {"type": "STRING"},
+        "gst": {"type": "STRING", "nullable": true},
+        "pan": {"type": "STRING", "nullable": true},
+        "address": {"type": "STRING", "nullable": true},
+        "state": {"type": "STRING", "nullable": true},
+        "pincode": {"type": "STRING", "nullable": true},
+        "country": {"type": "STRING", "nullable": true},
+        "contact_details": {
+          "type": ["OBJECT", "null"],
+          "properties": {
+            "email": {"type": "STRING", "nullable": true},
+            "phone": {"type": "STRING", "nullable": true}
+          },
+          "required": []
+        },
+        "billing_address": {"type": "STRING", "nullable": true},
+        "shipping_address": {"type": "STRING", "nullable": true}
+      },
+      "required": ["name"]
+    },
+    "place_of_supply": {"type": "STRING", "nullable": true},
+    "place_of_delivery": {"type": "STRING", "nullable": true},
+    "invoice_items": {
+      "type": "ARRAY",
+      "items": {
+        "type": "OBJECT",
+        "properties": {
+          "sl.no": {"type": ["NUMBER", "null"]},
+          "hsn": {"type": "STRING", "nullable": true},
+          "description": {"type": "STRING"},
+          "unit_price": {"type": "NUMBER"},
+          "qty": {"type": "NUMBER"},
+          "net_amount": {"type": "NUMBER"},
+          "tax": {
+            "type": "ARRAY",
+            "items": {
+              "type": "OBJECT",
+              "properties": {
+                "tax_type": {"type": "STRING"},
+                "tax_rate": {"type": "NUMBER"},
+                "tax_amount": {"type": "NUMBER"}
+              },
+              "required": ["tax_type", "tax_rate", "tax_amount"]
+            }
+          },
+          "total_amount": {"type": "NUMBER"}
+        },
+        "required": ["description", "unit_price", "qty", "net_amount", "total_amount"]
+      }
+    },
+    "transaction_id": {"type": "STRING", "nullable": true},
+    "date_time": {"type": "STRING", "nullable": true},
+    "invoice_value": {"type": "NUMBER"},
+    "mode_of_payment": {"type": "STRING", "nullable": true}
+  },
+  "required": ["invoice_number", "invoice_date", "seller", "buyer", "invoice_items", "invoice_value"]
 }
-\`
+\`\`\`
 
-Ensure all numerical values are extracted as numbers (integers or floats) and not as strings. Dates should be in 'YYYY-MM-DD' format. If time is present, 
-  \`date_time\` should follow ISO 8601 format. For addresses, capture the full address as a single string. For tax, extract each tax component (type, rate, amount) as a separate object within the \`tax\` array. If an item has no tax, the \`tax\` array should be empty.
+**Key Extraction Guidelines:**
 
-Pay close attention to multi-line fields like addresses and descriptions, capturing them completely. For \`seller.bank_details\`, extract all provided bank information.
+  * **Numerical Values:** Extract all amounts, prices, quantities, and rates as numbers (integers or floats).
+  * **Dates:** Extract dates in 'YYYY-MM-DD' format. If time is present, \`date_time\` should follow ISO 8601 (e.g., 'YYYY-MM-DDTHH:MM:SS+HH:MM').
+  * **Addresses:** Capture the full address as a single string.
+  * **Tax Details:** For each \`invoice_item\`, include all tax components (type, rate, amount) as separate objects within the \`tax\` array. If an item has no tax, the \`tax\` array for that item should be empty (\`[]\`).
+  * **Completeness:** Pay close attention to multi-line fields like addresses and descriptions, ensuring they are completely captured.
+  * **Bank Details:** Extract all provided bank information accurately into the respective \`seller.bank_details\` fields.
 
 The invoice to parse is attached.
 {{media url=invoiceDataUri}}
