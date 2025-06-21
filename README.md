@@ -1,4 +1,5 @@
 # Firebase Studio
+![image](https://github.com/user-attachments/assets/22dbcf29-f936-4bc4-96f0-78e577d7271e)
 
 
 <a href="https://studio.firebase.google.com/import?url=https%3A%2F%2Fgithub.com%2FAkhilenderReddy%2Fstudio">
