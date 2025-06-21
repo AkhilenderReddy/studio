@@ -28,13 +28,13 @@ const TaxItemSchema = z.object({
 
 const InvoiceItemSchema = z.object({
   'sl.no': z.number().nullable().describe('The serial number of the item.'),
-  hsn: z.string().nullable().describe('The Harmonized System of Nomenclature (HSN) code for the item.'),
-  description: z.string().nullable().describe('A description of the invoice item.'),
-  unit_price: z.number().nullable().describe('The price per unit of the item.'),
-  qty: z.number().nullable().describe('The quantity of the item.'),
-  net_amount: z.number().nullable().describe('The net amount for the item (quantity * unit price).'),
-  tax: z.array(TaxItemSchema).nullable().describe('An array of taxes applied to the item.'),
-  total_amount: z.number().nullable().describe('The total amount for the item including taxes.'),
+  hsn: z.string().describe('The Harmonized System of Nomenclature (HSN) code for the item.'),
+  description: z.string().describe('A description of the invoice item.'),
+  unit_price: z.number().describe('The price per unit of the item.'),
+  qty: z.number().describe('The quantity of the item.'),
+  net_amount: z.number().describe('The net amount for the item (quantity * unit price).'),
+  tax: z.array(TaxItemSchema).describe('An array of taxes applied to the item.'),
+  total_amount: z.number().describe('The total amount for the item including taxes.'),
 });
 
 const BankDetailsSchema = z.object({
@@ -51,24 +51,24 @@ const ContactDetailsSchema = z.object({
 });
 
 const SellerSchema = z.object({
-  name: z.string().nullable().describe('The name of the seller.'),
-  gst: z.string().nullable().describe('The GST identification number of the seller.'),
+  name: z.string().describe('The name of the seller.'),
+  gst: z.string().describe('The GST identification number of the seller.'),
   pan: z.string().nullable().describe('The Permanent Account Number (PAN) of the seller.'),
-  address: z.string().nullable().describe('The full address of the seller.'),
-  state: z.string().nullable().describe('The state of the seller.'),
-  pincode: z.string().nullable().describe("The postal code of the seller's address."),
+  address: z.string().describe('The full address of the seller.'),
+  state: z.string().describe('The state of the seller.'),
+  pincode: z.string().describe("The postal code of the seller's address."),
   country: z.string().nullable().describe('The country of the seller.'),
   bank_details: BankDetailsSchema.nullable().describe("The seller's bank account details."),
   contact_details: ContactDetailsSchema.nullable().describe("The seller's contact details."),
 });
 
 const BuyerSchema = z.object({
-  name: z.string().nullable().describe('The name of the buyer.'),
-  gst: z.string().nullable().describe('The GST identification number of the buyer.'),
+  name: z.string().describe('The name of the buyer.'),
+  gst: z.string().describe('The GST identification number of the buyer.'),
   pan: z.string().nullable().describe('The Permanent Account Number (PAN) of the buyer.'),
-  address: z.string().nullable().describe('The full address of the buyer.'),
-  state: z.string().nullable().describe('The state of the buyer.'),
-  pincode: z.string().nullable().describe("The postal code of the buyer's address."),
+  address: z.string().describe('The full address of the buyer.'),
+  state: z.string().describe('The state of the buyer.'),
+  pincode: z.string().describe("The postal code of the buyer's address."),
   country: z.string().nullable().describe('The country of the buyer.'),
   contact_details: ContactDetailsSchema.nullable().describe("The buyer's contact details."),
   billing_address: z.string().nullable().describe('The billing address for the buyer.'),
@@ -77,18 +77,18 @@ const BuyerSchema = z.object({
 
 const ExtractedDataSchema = z.object({
   order_number: z.string().nullable().describe('The order number associated with the invoice.'),
-  invoice_number: z.string().nullable().describe('The unique invoice number.'),
+  invoice_number: z.string().describe('The unique invoice number.'),
   order_date: z.string().nullable().describe('The date the order was placed (YYYY-MM-DD).'),
   invoice_id: z.string().nullable().describe('The invoice ID, often the same as the invoice number.'),
-  invoice_date: z.string().nullable().describe('The date the invoice was issued (YYYY-MM-DD).'),
-  seller: SellerSchema.nullable().describe('Details of the seller.'),
-  buyer: BuyerSchema.nullable().describe('Details of the buyer.'),
-  place_of_supply: z.string().nullable().describe('The place where the supply of goods or services occurred.'),
+  invoice_date: z.string().describe('The date the invoice was issued (YYYY-MM-DD).'),
+  seller: SellerSchema.describe('Details of the seller. This is a required object.'),
+  buyer: BuyerSchema.describe('Details of the buyer. This is a required object.'),
+  place_of_supply: z.string().describe('The place where the supply of goods or services occurred.'),
   place_of_delivery: z.string().nullable().describe('The place where the goods or services were delivered.'),
   invoice_items: z.array(InvoiceItemSchema).describe('A list of all items on the invoice. Must be an empty array if no items are found.'),
   transaction_id: z.string().nullable().describe('Any transaction ID associated with the payment.'),
   date_time: z.string().nullable().describe('The date and time of the invoice in ISO 8601 format.'),
-  invoice_value: z.number().nullable().describe('The total value of the invoice.'),
+  invoice_value: z.number().describe('The total value of the invoice.'),
   mode_of_payment: z.string().nullable().describe('The method of payment used or to be used.'),
 });
 
@@ -108,10 +108,10 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert invoice processing AI. Your task is to extract information from the provided invoice image and format it as a JSON object.
 
 **Crucial Instructions:**
-1.  **Strictly Adhere to Schema:** The output MUST strictly follow the provided JSON schema structure. Pay close attention to nested objects like \`seller\`, \`buyer\`, and \`invoice_items\`. All extracted information for a seller must be inside the \`seller\` object. All extracted information for a buyer must be inside the \`buyer\` object.
+1.  **Strictly Adhere to Schema:** The output MUST strictly follow the provided JSON schema structure. Pay close attention to nested objects like \`seller\`, \`buyer\`, and \`invoice_items\`. The \`seller\` and \`buyer\` objects are required and cannot be null.
 2.  **Do Not Omit Fields:** All fields defined in the schema must be present in your output.
-3.  **Use \`null\` for Missing Data:** If a value for a field cannot be found in the invoice, you MUST include the field key and set its value to \`null\`. Do not omit the key. This applies to all fields, including nested ones. For example, if you cannot find any buyer information, you must output \`"buyer": null\`. If you find buyer information but not their PAN, you must output \`"pan": null\` inside the buyer object.
-4.  **Handle \`invoice_items\` Array:** The \`invoice_items\` field must be an array of \`InvoiceItem\` objects. If no line items are found on the invoice, provide an empty array: \`"invoice_items": []\`. This field cannot be \`null\`. **Crucially, do not put \`null\` values as elements of the array.** Each element in the array must be a full \`InvoiceItem\` object; if you detect a line item but cannot extract its details, you should still create the object and set its individual fields to \`null\`.
+3.  **Use \`null\` for Missing Data:** If a value for a *nullable* field cannot be found in the invoice, you MUST include the field key and set its value to \`null\`. Do not omit the key. For required fields (non-nullable), you must extract a value.
+4.  **Handle \`invoice_items\` Array:** The \`invoice_items\` field must be an array of \`InvoiceItem\` objects. If no line items are found on the invoice, provide an empty array: \`"invoice_items": []\`. This field cannot be \`null\`. **Crucially, do not put \`null\` values as elements of the array.** Each element in the array must be a full \`InvoiceItem\` object.
 
 Here is the desired JSON structure with example values:
 

@@ -20,20 +20,53 @@ import { Textarea } from '@/components/ui/textarea';
 import { parseInvoice } from '@/ai/flows/parse-invoice';
 
 const initialJson = {
-  "order_number": null,
-  "invoice_number": "",
-  "order_date": null,
-  "invoice_id": "",
-  "invoice_date": "",
-  "seller": { "name": "", "gst": "", "pan": "", "address": "", "state": "", "pincode": "", "country": null, "bank_details": { "account_name": "", "account_number": "", "bank_name": "", "branch": "", "ifsc": "" }, "contact_details": { "phone": null, "email": null } },
-  "buyer": { "name": "", "gst": "", "pan": null, "address": "", "state": "", "pincode": "", "country": null, "contact_details": { "email": null, "phone": null }, "billing_address": "", "shipping_address": "" },
-  "place_of_supply": "",
-  "place_of_delivery": null,
-  "invoice_items": [],
-  "transaction_id": null,
-  "date_time": null,
-  "invoice_value": 0,
-  "mode_of_payment": null
+  order_number: null,
+  invoice_number: "",
+  order_date: null,
+  invoice_id: null,
+  invoice_date: "",
+  seller: { 
+    name: "", 
+    gst: "", 
+    pan: null, 
+    address: "", 
+    state: "", 
+    pincode: "", 
+    country: null, 
+    bank_details: { 
+      account_name: null, 
+      account_number: null, 
+      bank_name: null, 
+      branch: null, 
+      ifsc: null 
+    }, 
+    contact_details: { 
+      phone: null, 
+      email: null 
+    } 
+  },
+  buyer: { 
+    name: "", 
+    gst: "", 
+    pan: null, 
+    address: "", 
+    state: "", 
+    pincode: "", 
+    country: null, 
+    contact_details: { 
+      email: null, 
+      phone: null 
+    }, 
+    billing_address: null, 
+    shipping_address: null 
+  },
+  place_of_supply: "",
+  place_of_delivery: null,
+  invoice_items: [],
+  transaction_id: null,
+  date_time: null,
+  invoice_value: 0,
+  mode_of_payment: null
 };
 
 export default function Home() {
@@ -41,6 +74,8 @@ export default function Home() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [jsonData, setJsonData] = useState<string>(JSON.stringify(initialJson, null, 2));
   const [isLoading, setIsLoading] = useState(false);
+  const [isPushing, setIsPushing] = useState(false);
+  const [isParsed, setIsParsed] = useState(false);
   const [status, setStatus] = useState<string>('Awaiting invoice upload.');
   const [isDragging, setIsDragging] = useState(false);
   const [year, setYear] = useState<number | null>(null);
@@ -92,6 +127,7 @@ export default function Home() {
       setFileName(file.name);
       setInvoiceImage(null);
       setJsonData(JSON.stringify(initialJson, null, 2));
+      setIsParsed(false);
       convertPdfToImage(file);
     } else if (file) {
       toast({
@@ -139,26 +175,18 @@ export default function Home() {
     }
 
     setIsLoading(true);
+    setIsParsed(false);
     setStatus('Extracting data with AI...');
     try {
       const result = await parseInvoice({ invoiceDataUri: invoiceImage });
       if (result.extractedData) {
         setJsonData(JSON.stringify(result.extractedData, null, 2));
-        setStatus('Data extracted successfully. Simulating push to ERP...');
+        setStatus('Data extracted successfully. Ready to push to ERP.');
         toast({
           title: "Parsing Successful",
           description: "Invoice data has been extracted.",
         });
-
-        setTimeout(() => {
-          setStatus('Successfully pushed to ERP.');
-          toast({
-            title: "Push to ERP complete!",
-            description: "The invoice data has been sent to the ERP system.",
-          });
-          setIsLoading(false);
-        }, 1500);
-
+        setIsParsed(true);
       } else {
         throw new Error("No data was extracted from the invoice.");
       }
@@ -171,8 +199,24 @@ export default function Home() {
         title: "AI Parsing Failed",
         description: errorMessage,
       });
+    } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePushToErp = async () => {
+    setIsPushing(true);
+    setStatus('Pushing to ERP...');
+    
+    // Simulate API call
+    setTimeout(() => {
+      setStatus('Successfully pushed to ERP.');
+      toast({
+        title: "Push to ERP complete!",
+        description: "The invoice data has been sent to the ERP system.",
+      });
+      setIsPushing(false);
+    }, 1500);
   };
 
   return (
@@ -248,19 +292,34 @@ export default function Home() {
         </div>
 
         <div className="mt-8 flex flex-col items-center gap-4">
-          <Button 
-            onClick={handleParse} 
-            disabled={isLoading || !invoiceImage}
-            size="lg"
-            className="w-full max-w-md bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-base shadow-lg"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Processing...
-              </>
-            ) : 'Parse Invoice & Push to ERP'}
-          </Button>
+           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center w-full max-w-md">
+            <Button 
+              onClick={handleParse} 
+              disabled={isLoading || !invoiceImage}
+              size="lg"
+              className="w-full sm:w-auto font-bold text-base shadow-lg"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Parsing...
+                </>
+              ) : 'Parse Invoice'}
+            </Button>
+            <Button 
+              onClick={handlePushToErp} 
+              disabled={isPushing || !isParsed || isLoading}
+              size="lg"
+              className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-base shadow-lg"
+            >
+              {isPushing ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Pushing...
+                </>
+              ) : 'Push to ERP'}
+            </Button>
+          </div>
           <div className="text-center text-sm text-muted-foreground h-5">
             {status}
           </div>
